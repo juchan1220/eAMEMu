@@ -12,6 +12,10 @@ import android.nfc.cardemulation.NfcFCardEmulation;
 import android.nfc.tech.NfcA;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
+
+import com.google.android.material.textfield.TextInputLayout;
 
 public class MainActivity extends AppCompatActivity {
     NfcAdapter nfcAdapter = null;
@@ -33,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
             builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    android.os.Process.killProcess(android.os.Process.myPid());
+                    //android.os.Process.killProcess(android.os.Process.myPid());
                 }
             });
             AlertDialog alertDialog = builder.create();
@@ -61,6 +65,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("nfcFCardEmulation", "setNfcid2 is failed...");
             }
         }
+
+        TextInputLayout inputLayout = findViewById(R.id.sid_input_layout);
+        inputLayout.setCounterEnabled(true);
+        inputLayout.setCounterMaxLength(16);
     }
 
     @Override
@@ -68,13 +76,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         if(nfcFCardEmulation != null && componentName != null){
             Log.d("MainActivity onResume()", "enabled!");
-            boolean res = nfcFCardEmulation.enableService(this, componentName);
-            if(res == true){
-                Log.d("MainActivity onResume()", "enableService Success");
-            }
-            else{
-                Log.d("MainActivity onResume()", "enableService Failed");
-            }
+            nfcFCardEmulation.enableService(this, componentName);
         }
     }
 
@@ -84,6 +86,47 @@ public class MainActivity extends AppCompatActivity {
         if(nfcFCardEmulation != null && componentName != null){
             Log.d("MainActivity onPause()", "disabled...");
             nfcFCardEmulation.disableService(this);
+        }
+    }
+
+    public void applyClick(View view){
+        TextInputLayout inputLayout = findViewById(R.id.sid_input_layout);
+        EditText editText = inputLayout.getEditText();
+
+        if(editText == null){
+            return;
+        }
+
+        String s = editText.getText().toString().toUpperCase();
+
+        if(s == null || s.length() < 16){
+            inputLayout.setError("sid는 반드시 16자리 16진수여야 합니다.");
+            return ;
+        }
+
+        s = s.toUpperCase();
+
+        if(s.matches("[0-9a-fA-F]+") == false){
+            inputLayout.setError("sid는 반드시 16자리 16진수여야 합니다.");
+            return ;
+        }
+        if(s.substring(0,4).contentEquals("02FE") == false){
+            inputLayout.setError("sid는 반드시 02FE로 시작해야합니다.");
+            return ;
+        }
+
+        inputLayout.setError(null);
+
+        if(nfcFCardEmulation != null && componentName != null){
+            nfcFCardEmulation.disableService(this);
+            boolean res = nfcFCardEmulation.setNfcid2ForService(componentName, s);
+            if(res == true){
+                Log.d("Apply","setNfcid2 is successful!");
+            }
+            else{
+                Log.d("Apply","setNfcid2 is failed...");
+            }
+            nfcFCardEmulation.enableService(this, componentName);
         }
     }
 }
