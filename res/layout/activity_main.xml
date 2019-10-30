@@ -36,15 +36,24 @@
                 android:layout_marginEnd="8dp"
                 android:hint="SID"
                 android:lines="1" />
+
         </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/random_generate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="randomClick"
+            android:text="Random" />
 
         <Button
             android:id="@+id/Apply"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="0dp"
+            android:layout_marginEnd="0dp"
             android:onClick="applyClick"
             android:text="Apply" />
     </LinearLayout>

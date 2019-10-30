@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 import android.nfc.cardemulation.NfcFCardEmulation;
@@ -14,13 +15,17 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.material.textfield.TextInputLayout;
+
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     NfcAdapter nfcAdapter = null;
     NfcFCardEmulation nfcFCardEmulation = null;
     ComponentName componentName = null;
+    SharedPreferences sf = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
             builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    //android.os.Process.killProcess(android.os.Process.myPid());
+                    android.os.Process.killProcess(android.os.Process.myPid());
                 }
             });
             AlertDialog alertDialog = builder.create();
@@ -48,27 +53,31 @@ public class MainActivity extends AppCompatActivity {
             nfcFCardEmulation = NfcFCardEmulation.getInstance(nfcAdapter);
             componentName = new ComponentName("tk.nulldori.eamemu", "tk.nulldori.eamemu.eAMEMuService");
 
-            boolean sys = nfcFCardEmulation.registerSystemCodeForService(componentName, "4000");
-            boolean res = nfcFCardEmulation.setNfcid2ForService(componentName, "02FE123412341234");
+            nfcFCardEmulation.registerSystemCodeForService(componentName, "4000");
 
-            if(sys == true){
-                Log.d("nfcFCardEmulation", "register system code is successful!");
+            sf = getSharedPreferences("sf", MODE_PRIVATE);
+            String cardId = sf.getString("cardID","");
+
+            TextInputLayout inputLayout = findViewById(R.id.sid_input_layout);
+            EditText editText = inputLayout.getEditText();
+
+            inputLayout.setCounterEnabled(true);
+            inputLayout.setCounterMaxLength(16);
+
+
+            if(cardId == null){
+                cardId = randomCardID();
+                nfcFCardEmulation.setNfcid2ForService(componentName, cardId);
+                editText.setText(cardId);
+                SharedPreferences.Editor editor = sf.edit();
+                editor.putString("cardID", cardId);
+                editor.commit();
             }
             else{
-                Log.d("nfcFCardEmulation", "register system code is failed...");
-            }
-
-            if(res == true){
-                Log.d("nfcFCardEmulation", "setNfcid2 is successful!");
-            }
-            else {
-                Log.d("nfcFCardEmulation", "setNfcid2 is failed...");
+                nfcFCardEmulation.setNfcid2ForService(componentName, cardId);
+                editText.setText(cardId);
             }
         }
-
-        TextInputLayout inputLayout = findViewById(R.id.sid_input_layout);
-        inputLayout.setCounterEnabled(true);
-        inputLayout.setCounterMaxLength(16);
     }
 
     @Override
@@ -121,12 +130,37 @@ public class MainActivity extends AppCompatActivity {
             nfcFCardEmulation.disableService(this);
             boolean res = nfcFCardEmulation.setNfcid2ForService(componentName, s);
             if(res == true){
+                Toast.makeText(this.getApplicationContext(), R.string.apply_success_toast, Toast.LENGTH_SHORT).show();
+                SharedPreferences.Editor editor = sf.edit();
+                editor.putString("cardID", s);
+                editor.commit();
                 Log.d("Apply","setNfcid2 is successful!");
             }
             else{
+                Toast.makeText(this.getApplicationContext(), R.string.apply_failed_toast, Toast.LENGTH_SHORT).show();
                 Log.d("Apply","setNfcid2 is failed...");
             }
             nfcFCardEmulation.enableService(this, componentName);
         }
+    }
+
+    public void randomClick(View view) {
+        TextInputLayout inputLayout = findViewById(R.id.sid_input_layout);
+        EditText editText = inputLayout.getEditText();
+
+        if(editText == null){
+            return;
+        }
+
+        editText.setText(randomCardID());
+        Toast.makeText(this.getApplicationContext(), R.string.random_generate_toast, Toast.LENGTH_SHORT).show();
+    }
+
+    public String randomCardID(){
+        Random random = new Random();
+
+        return "02FE" + String.format("%04x", random.nextInt(65536)).toUpperCase()
+                + String.format("%04x", random.nextInt(65536)).toUpperCase()
+                + String.format("%04x", random.nextInt(65536)).toUpperCase();
     }
 }
